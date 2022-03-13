@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package commission;
+
+service CommissionService {
+  rpc GetCommission (GetCommissionRequest) returns (Currency) {}
+}
+
+message Account {
+  int32 id = 1;
+  int32 balance = 2;
+  bool withOverdraft = 3;
+}
+message Currency {
+  int32 amount = 1;
+  string currency = 2;
+}
+message GetCommissionRequest {
+  Account account = 1;
+  Currency amount = 2;
+}

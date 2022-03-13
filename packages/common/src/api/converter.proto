@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package converter;
+
+service ConverterService {
+  rpc Convert (ConverterRequest) returns (ConvertResponse) {}
+}
+
+message Currency {
+  int32 amount = 1;
+  string currency = 2;
+}
+
+message ConverterRequest {
+  Currency from = 1;
+  Currency to = 2;
+}
+
+message ConvertResponse {
+  Currency requestedAmount = 1;
+  Currency resultedAmount = 2;
+}

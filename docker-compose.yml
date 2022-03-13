@@ -1,0 +1,169 @@
+version: "3.4"
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - internal-net
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    networks:
+      - internal-net
+    healthcheck:
+      test: ["CMD", "nc", "-vz", "localhost", "9092"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: api-gateway
+      target: builder
+    volumes:
+      - "/usr/src/app/packages/api-gateway/node_modules"
+      - "./packages/api-gateway:/usr/src/app/packages/api-gateway"
+    command: npm --prefix packages/api-gateway run start:dev
+    environment:
+      GRPC_ACCOUNT_ADDRESS: accounts:50051
+      GRPC_ACCOUNT_PACKAGE: account
+      KAFKA_CLIENT_ID: api-gateway-service
+      KAFKA_GROUP_ID: api-gateway-consumer
+      KAFKA_BROKER: kafka:9092
+      APP_PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - internal-net
+
+  commission:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: commission
+      target: builder
+    volumes:
+      - "/usr/src/app/packages/commission/node_modules"
+      - "./packages/commission:/usr/src/app/packages/commission"
+    command: npm --prefix packages/commission run start:dev
+    environment:
+      GRPC_ADDRESS: commission:50052
+      GRPC_PACKAGE: commission
+    networks:
+      - internal-net
+
+  converter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: converter
+      target: builder
+    volumes:
+      - "/usr/src/app/packages/converter/node_modules"
+      - "./packages/converter:/usr/src/app/packages/converter"
+    command: npm --prefix packages/converter run start:dev
+    environment:
+      GRPC_ADDRESS: converter:50053
+      GRPC_PACKAGE: converter
+    networks:
+      - internal-net
+
+  processing:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: processing
+      target: builder
+    volumes:
+      - "/usr/src/app/packages/processing/node_modules"
+      - "./packages/processing:/usr/src/app/packages/processing"
+    command: npm --prefix packages/processing run start:dev
+    environment:
+      GRPC_ACCOUNT_ADDRESS: accounts:50051
+      GRPC_ACCOUNT_PACKAGE: account
+      GRPC_COMMISSION_ADDRESS: commission:50052
+      GRPC_COMMISSION_PACKAGE: commission
+      GRPC_CONVERTER_ADDRESS: converter:50053
+      GRPC_CONVERTER_PACKAGE: converter
+      KAFKA_CLIENT_ID: processing-service
+      KAFKA_GROUP_ID: processing-consumer-service
+      KAFKA_BROKER: kafka:9092
+    networks:
+      - internal-net
+
+  accounts:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: accounts
+      target: builder
+    volumes:
+      - "/usr/src/app/packages/accounts/node_modules"
+      - "./packages/accounts:/usr/src/app/packages/accounts"
+    command: bash -c "npm --prefix packages/accounts run db:reset:a && npm --prefix packages/accounts run start:dev"
+    environment:
+      GRPC_ADDRESS: accounts:50051
+      GRPC_PACKAGE: account
+      TYPEORM_LOGGING: "false"
+      POSTGRES_HOST: postgresql
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: db_password
+      POSTGRES_DB: accounts
+      POSTGRES_SSL: "false"
+    depends_on:
+      - postgresql
+    networks:
+      - internal-net
+
+  postgresql:
+    image: "postgres:12.2-alpine"
+    environment:
+      POSTGRES_DB: development
+      POSTGRES_PASSWORD: db_password
+      POSTGRES_USER: postgres
+    healthcheck:
+      interval: 10s
+      retries: 10
+      test:
+        - CMD
+        - pg_isready
+        - "-U"
+        - "${POSTGRES_USER}"
+        - "-P"
+        - "${POSTGRES_PASSWORD}"
+      timeout: 45s
+    networks:
+      - internal-net
+    restart: on-failure
+    stdin_open: true
+    tty: true
+    volumes:
+      - "./init.sql:/docker-entrypoint-initdb.d/1_init.sql"
+
+networks:
+  internal-net:
+    driver: bridge

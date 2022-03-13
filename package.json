@@ -1,0 +1,17 @@
+{
+  "name": "root",
+  "private": true,
+  "scripts": {
+    "precleanup": "lerna exec --concurrency 1 --stream -- rm -rf dist",
+    "cleanup": "lerna exec --concurrency 1 --stream -- rm -rf node_modules/ package-lock.json",
+    "prebootstrap": "npm run cleanup",
+    "bootstrap": "lerna bootstrap --hoist",
+    "prebuild": "lerna link && lerna run --scope @fa/common build",
+    "build": "lerna run build",
+    "predev": "sudo docker-compose up -d && lerna run --scope @fa/common build",
+    "dev": "lerna run start:dev --parallel --stream"
+  },
+  "devDependencies": {
+    "lerna": "4.0.0"
+  }
+}

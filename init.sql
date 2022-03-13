@@ -1,0 +1,2 @@
+CREATE DATABASE accounts;
+GRANT ALL PRIVILEGES ON DATABASE accounts TO postgres;

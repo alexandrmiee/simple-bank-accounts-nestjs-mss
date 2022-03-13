@@ -1,0 +1,13 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+
+package common;
+
+message Currency {
+  int32 amount = 1;
+  string currency = 2;
+}
+
+message Status {
+  bool status = 1;
+}

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package processing;
+
+service ProcessingService {
+  rpc Transfer (TransferRequestDto) returns (TransferResponseDto) {}
+}
+
+message TransferRequestDto {
+  string type = 1;
+  int32 amount = 2;
+  string fromAccountId = 3;
+  string toAccountId = 4;
+  string currency = 5;
+
+}
+
+message TransferResponseDto {
+  string id = 1;
+  string status = 2;
+}
