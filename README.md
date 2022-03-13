@@ -1,8 +1,9 @@
 # Installation
 
 - update `.env.a` files in `packages/*`
-- `npm run bootstrap`
-- `npm run build`
+- run `npm ci`
+- run `npm run bootstrap`
+- run `npm run build`
 
 > Note. Node@16 was used
 
@@ -13,6 +14,7 @@
 - install postgres, zookeeper, kafka
 - create `accounts` table in postgres db
 - update `env.a` files
+- run `npm ci`
 - run `npm run bootstrap`
 - run `npm run build `
 - to seed accounts data run `npm run db:reset:a` in `packages/accounts`
@@ -21,8 +23,9 @@
 
 ### Docker compose
 
-- npm `npm run bootstrap`
-- npm `npm run build`
+- run `npm ci`
+- run `npm run bootstrap`
+- run `npm run build`
 - `docker-compose up`
 
 > Note. If you have previously started postgres volumes, you should run `docker-compose down --volumes` before start or create database `accounts` manually
